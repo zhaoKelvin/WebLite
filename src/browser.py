@@ -1,6 +1,7 @@
 from url import URL
 import tkinter as tk
 from typing import List
+from htmlparser import HTMLParser
 from layout import Layout
 
 HSTEP, VSTEP = 13, 18
@@ -35,8 +36,8 @@ class Browser:
 
     def load(self, url: URL) -> None:
         headers, body = url.request()
-        tokens = url.lex(body)
-        self.display_list = Layout(tokens).display_list
+        self.nodes = HTMLParser(body).parse()
+        self.display_list = Layout(self.nodes).display_list
         self.draw()
     
     def draw(self):
