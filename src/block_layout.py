@@ -75,10 +75,13 @@ class BlockLayout:
             self.height = self.cursor_y
     
     def paint(self, display_list):
-        if isinstance(self.node, Element) and self.node.tag == "pre":
+        bgcolor = self.node.style.get("background-color",
+                                      "transparent")
+        if bgcolor != "transparent":
             x2, y2 = self.x + self.width, self.y + self.height
-            rect = DrawRect(self.x, self.y, x2, y2, "gray")
+            rect = DrawRect(self.x, self.y, x2, y2, bgcolor)
             display_list.append(rect)
+        
         for x, y, word, font in self.display_list:
             display_list.append(DrawText(x, y, word, font))
         for child in self.children:

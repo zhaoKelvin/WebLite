@@ -103,8 +103,6 @@ class HTMLParser:
             # exit loop if no other issues
             else:
                 break
-
-
     
     def finish(self):
         if len(self.unfinished) == 0:

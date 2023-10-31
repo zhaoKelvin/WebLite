@@ -3,6 +3,7 @@ import tkinter as tk
 from typing import List
 from htmlparser import HTMLParser
 from document_layout import DocumentLayout
+from cssparser import style
 
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
@@ -25,6 +26,17 @@ class Browser:
         
         self.window.bind("<Up>", self.scrollup)
         self.window.bind("<Down>", self.scrolldown)
+        
+        self.window.bind("<MouseWheel>", self.scrollmouse)
+        
+    def scrollmouse(self, e) -> None:
+        if e.delta > 0:
+            self.scroll = max(self.scroll - SCROLL_STEP / 2, 0)
+            self.draw()
+        else:
+            max_y = max(self.document.height - HEIGHT, 0)
+            self.scroll = min(self.scroll + SCROLL_STEP / 2, max_y)
+            self.draw()
 
     def scrollup(self, e) -> None:
         self.scroll = max(self.scroll - SCROLL_STEP, 0)
@@ -38,6 +50,7 @@ class Browser:
     def load(self, url: URL) -> None:
         headers, body = url.request()
         self.nodes = HTMLParser(body).parse()
+        style(self.nodes)
         self.document = DocumentLayout(self.nodes)
         self.document.layout()
         self.display_list = []
