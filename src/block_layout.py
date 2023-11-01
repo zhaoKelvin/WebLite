@@ -82,8 +82,9 @@ class BlockLayout:
             rect = DrawRect(self.x, self.y, x2, y2, bgcolor)
             display_list.append(rect)
         
-        for x, y, word, font in self.display_list:
-            display_list.append(DrawText(x, y, word, font))
+        for x, y, word, font, color in self.display_list:
+            display_list.append(DrawText(self.x + x, self.y + y,
+                                     word, font, color))
         for child in self.children:
             child.paint(display_list)
     
@@ -112,22 +113,23 @@ class BlockLayout:
             self.flush()
             self.cursor_y += VSTEP
             
-    def recurse(self, tree):
-        if isinstance(tree, Text):
-            for word in tree.text.split():
-                self.word(word)
+    def recurse(self, node):
+        if isinstance(node, Text):
+            for word in node.text.split():
+                self.word(node, word)
         else:
-            self.open_tag(tree.tag)
-            for child in tree.children:
+            if node.tag == "br":
+                self.flush()
+            for child in node.children:
                 self.recurse(child)
-            self.close_tag(tree.tag)
             
-    def word(self, word: str):
-        font = self.get_font(self.size, self.weight, self.style)
+    def word(self, node, word: str):
+        color = node.style["color"]
+        font = self.get_font_wrapper(node)
         w = font.measure(word)
         if self.cursor_x + w > self.width:
             self.flush()
-        self.line.append((self.cursor_x, word, font))
+        self.line.append((self.cursor_x, word, font, color))
         self.cursor_x += w + font.measure(" ")
         
     def flush(self):
@@ -136,14 +138,14 @@ class BlockLayout:
         updates the cursor_x and cursor_y fields.
         """
         if not self.line: return
-        metrics = [font.metrics() for x, word, font in self.line]
+        metrics = [font.metrics() for x, word, font, color in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
         
-        for rel_x, word, font in self.line:
+        for rel_x, word, font, color in self.line:
             x = self.x + rel_x
             y = self.y + baseline - font.metrics("ascent")
-            self.display_list.append((x, y, word, font))
+            self.display_list.append((x, y, word, font, color))
             
         self.cursor_x = 0
         self.line = []
@@ -157,3 +159,10 @@ class BlockLayout:
             font = Font(size=size, weight=weight, slant=slant)
             FONTS[key] = font
         return FONTS[key]
+    
+    def get_font_wrapper(self, node):
+        weight = node.style["font-weight"]
+        style = node.style["font-style"]
+        if style == "normal": style = "roman"
+        size = int(float(node.style["font-size"][:-2]) * .75)
+        return self.get_font(size, weight, style)

@@ -1,8 +1,22 @@
 from element import Element
+from selector import DescendantSelector, TagSelector
 
+
+INHERITED_PROPERTIES = {
+    "font-size": "16px",
+    "font-style": "normal",
+    "font-weight": "normal",
+    "color": "black",
+}
 
 def style(node, rules):
     node.style = {}
+    
+    for property, default_value in INHERITED_PROPERTIES.items():
+        if node.parent:
+            node.style[property] = node.parent.style[property]
+        else:
+            node.style[property] = default_value
     
     for selector, body in rules:
         if not selector.matches(node): continue
@@ -13,6 +27,15 @@ def style(node, rules):
         pairs = CSSParser(node.attributes["style"]).body()
         for property, value in pairs.items():
             node.style[property] = value
+            
+    if node.style["font-size"].endswith("%"):
+        if node.parent:
+            parent_font_size = node.parent.style["font-size"]
+        else:
+            parent_font_size = INHERITED_PROPERTIES["font-size"]
+        node_pct = float(node.style["font-size"][:-1]) / 100
+        parent_px = float(parent_font_size[:-2])
+        node.style["font-size"] = str(node_pct * parent_px) + "px"
             
     for child in node.children:
         style(child, rules)
@@ -75,6 +98,7 @@ class CSSParser:
                     self.literal(";")
                     self.whitespace()
                 else:
+                    print(self.s)
                     break
                 
         return pairs
@@ -96,8 +120,19 @@ class CSSParser:
                     self.literal("}")
                     self.whitespace()
                 else:
+                    print(self.s)
                     break
         return rules
+    
+    def selector(self):
+        out = TagSelector(self.word().lower())
+        self.whitespace()
+        while self.i < len(self.s) and self.s[self.i] != "{":
+            tag = self.word()
+            descendant = TagSelector(tag.lower())
+            out = DescendantSelector(out, descendant)
+            self.whitespace()
+        return out
     
     def ignore_until(self, chars):
         """
@@ -109,4 +144,5 @@ class CSSParser:
                 return self.s[self.i]
             else:
                 self.i += 1
+        return None
 

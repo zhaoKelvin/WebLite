@@ -22,7 +22,8 @@ class Browser:
         self.canvas = tk.Canvas(
             self.window,
             width=WIDTH,
-            height=HEIGHT
+            height=HEIGHT,
+            bg="white"
         )
         self.canvas.pack()
         
@@ -37,11 +38,11 @@ class Browser:
         
     def scrollmouse(self, e) -> None:
         if e.delta > 0:
-            self.scroll = max(self.scroll - SCROLL_STEP / 2, 0)
+            self.scroll = max(self.scroll - SCROLL_STEP, 0)
             self.draw()
         else:
             max_y = max(self.document.height - HEIGHT, 0)
-            self.scroll = min(self.scroll + SCROLL_STEP / 2, max_y)
+            self.scroll = min(self.scroll + SCROLL_STEP, max_y)
             self.draw()
 
     def scrollup(self, e) -> None:
@@ -73,6 +74,7 @@ class Browser:
             except:
                 continue
             rules.extend(CSSParser(body).parse())
+            
         style(self.nodes, sorted(rules, key=cascade_priority))
 
         

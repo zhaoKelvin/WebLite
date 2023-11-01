@@ -1,14 +1,5 @@
 from element import Element
 
-def selector(self):
-    out = TagSelector(self.word().lower())
-    self.whitespace()
-    while self.i < len(self.s) and self.s[self.i] != "{":
-        tag = self.word()
-        descendant = TagSelector(tag.lower())
-        out = DescendantSelector(out, descendant)
-        self.whitespace()
-    return out
 
 class TagSelector:
     def __init__(self, tag):
