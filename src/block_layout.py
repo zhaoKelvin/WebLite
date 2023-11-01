@@ -141,10 +141,9 @@ class BlockLayout:
         metrics = [font.metrics() for x, word, font, color in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
-        
-        for rel_x, word, font, color in self.line:
-            x = self.x + rel_x
-            y = self.y + baseline - font.metrics("ascent")
+            
+        for x, word, font, color in self.line:
+            y = baseline - font.metrics("ascent")
             self.display_list.append((x, y, word, font, color))
             
         self.cursor_x = 0

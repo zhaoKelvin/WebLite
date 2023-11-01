@@ -98,7 +98,6 @@ class CSSParser:
                     self.literal(";")
                     self.whitespace()
                 else:
-                    print(self.s)
                     break
                 
         return pairs
@@ -120,7 +119,6 @@ class CSSParser:
                     self.literal("}")
                     self.whitespace()
                 else:
-                    print(self.s)
                     break
         return rules
     
