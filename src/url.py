@@ -72,3 +72,16 @@ class URL:
         body = response.read()
         s.close()
         return headers, body
+    
+    def resolve(self, url):
+        if "://" in url: return URL(url)
+        if not url.startswith("/"):
+            dir, _ = self.path.rsplit("/", 1)
+            while url.startswith("../"):
+                _, url = url.split("/", 1)
+                if "/" in dir:
+                    dir, _ = dir.rsplit("/", 1)
+            url = dir + "/" + url
+        return URL(self.scheme + "://" + self.host + \
+                   ":" + str(self.port) + url)
+

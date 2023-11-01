@@ -1,9 +1,11 @@
+from element import Element
 from url import URL
 import tkinter as tk
 from typing import List
 from htmlparser import HTMLParser
 from document_layout import DocumentLayout
-from cssparser import style
+from cssparser import CSSParser, cascade_priority, style
+from utils import tree_to_list
 
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
@@ -29,6 +31,10 @@ class Browser:
         
         self.window.bind("<MouseWheel>", self.scrollmouse)
         
+        with open("browser.css") as f:
+            self.default_style_sheet = CSSParser(f.read()).parse()
+
+        
     def scrollmouse(self, e) -> None:
         if e.delta > 0:
             self.scroll = max(self.scroll - SCROLL_STEP / 2, 0)
@@ -48,9 +54,29 @@ class Browser:
         self.draw()
 
     def load(self, url: URL) -> None:
+        # Parse HTML
         headers, body = url.request()
         self.nodes = HTMLParser(body).parse()
-        style(self.nodes)
+        
+        # Parse CSS
+        rules = self.default_style_sheet.copy()
+        links = [node.attributes["href"]
+                for node in tree_to_list(self.nodes, [])
+                if isinstance(node, Element)
+                and node.tag == "link"
+                and "href" in node.attributes
+                and node.attributes.get("rel") == "stylesheet"]
+
+        for link in links:
+            try:
+                header, body = url.resolve(link).request()
+            except:
+                continue
+            rules.extend(CSSParser(body).parse())
+        style(self.nodes, sorted(rules, key=cascade_priority))
+
+        
+        # Load DOM Tree
         self.document = DocumentLayout(self.nodes)
         self.document.layout()
         self.display_list = []
