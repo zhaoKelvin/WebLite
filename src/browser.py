@@ -1,4 +1,7 @@
+from chrome import Chrome
 from element import Element
+from tab import Tab
+from text import Text
 from url import URL
 import tkinter as tk
 from typing import List
@@ -10,6 +13,9 @@ from utils import tree_to_list
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
 SCROLL_STEP = 100
+
+with open("browser.css") as f:
+    DEFAULT_STYLE_SHEET = CSSParser(f.read()).parse()
 
 class Browser:
     
@@ -27,71 +33,68 @@ class Browser:
         )
         self.canvas.pack()
         
-        self.window.bind("<Up>", self.scrollup)
-        self.window.bind("<Down>", self.scrolldown)
+        self.url = None
         
-        self.window.bind("<MouseWheel>", self.scrollmouse)
+        self.tabs = []
+        self.active_tab = None
         
-        with open("browser.css") as f:
-            self.default_style_sheet = CSSParser(f.read()).parse()
+        self.chrome = Chrome(self)
+        
+        self.window.bind("<Up>", self.handle_up)
+        self.window.bind("<Down>", self.handle_down)
+        self.window.bind("<MouseWheel>", self.handle_scrollmouse)
+        self.window.bind("<Button-1>", self.handle_click)
+        self.window.bind("<Key>", self.handle_key)
+        self.window.bind("<Return>", self.handle_enter)
 
-        
-    def scrollmouse(self, e) -> None:
-        if e.delta > 0:
-            self.scroll = max(self.scroll - SCROLL_STEP, 0)
-            self.draw()
-        else:
-            max_y = max(self.document.height - HEIGHT, 0)
-            self.scroll = min(self.scroll + SCROLL_STEP, max_y)
-            self.draw()
-
-    def scrollup(self, e) -> None:
-        self.scroll = max(self.scroll - SCROLL_STEP, 0)
+    def handle_up(self, e):
+        self.active_tab.scrollup()
         self.draw()
 
-    def scrolldown(self, e) -> None:
-        max_y = max(self.document.height - HEIGHT, 0)
-        self.scroll = min(self.scroll + SCROLL_STEP, max_y)
+    def handle_down(self, e):
+        self.active_tab.scrolldown()
+        self.draw()
+        
+    def handle_scrollmouse(self, e):
+        self.active_tab.scrollmouse(e.delta)
+        self.draw()
+        
+    def handle_click(self, e):
+        if e.y < self.chrome.bottom:
+            self.chrome.click(e.x, e.y)
+        else:
+            tab_y = e.y - self.chrome.bottom
+            self.active_tab.click(e.x, tab_y)
+        self.draw()
+        
+    def handle_key(self, e):
+        if len(e.char) == 0: return
+        if not (0x20 <= ord(e.char) < 0x7f): return
+        self.chrome.keypress(e.char)
+        self.draw()
+        
+    def handle_enter(self, e):
+        self.chrome.enter()
         self.draw()
 
     def load(self, url: URL) -> None:
-        # Parse HTML
-        headers, body = url.request()
-        self.nodes = HTMLParser(body).parse()
-        
-        # Parse CSS
-        rules = self.default_style_sheet.copy()
-        links = [node.attributes["href"]
-                for node in tree_to_list(self.nodes, [])
-                if isinstance(node, Element)
-                and node.tag == "link"
-                and "href" in node.attributes
-                and node.attributes.get("rel") == "stylesheet"]
-
-        for link in links:
-            try:
-                header, body = url.resolve(link).request()
-            except:
-                continue
-            rules.extend(CSSParser(body).parse())
-            
-        style(self.nodes, sorted(rules, key=cascade_priority))
-
-        
-        # Load DOM Tree
-        self.document = DocumentLayout(self.nodes)
-        self.document.layout()
-        self.display_list = []
-        self.document.paint(self.display_list)
-        self.draw()
+        self.new_tab(url)
     
     def draw(self):
         self.canvas.delete("all")
-        for cmd in self.display_list:
-            if cmd.top > self.scroll + HEIGHT: continue
-            if cmd.bottom < self.scroll: continue
-            cmd.execute(self.scroll, self.canvas)
-
+        self.active_tab.draw(self.canvas, self.chrome.bottom)
+        
+        # Draw the chrome display
+        for cmd in self.chrome.paint():
+            cmd.execute(0, self.canvas)
+        
+    def new_tab(self, url):
+        new_tab = Tab(HEIGHT - self.chrome.bottom)
+        new_tab.load(url)
+        self.active_tab = new_tab
+        self.tabs.append(new_tab)
+        self.draw()
+        
 
 
 if __name__ == "__main__":

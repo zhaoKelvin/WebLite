@@ -1,13 +1,10 @@
-from tkinter.font import Font
-
 from text import Text
 from element import Element
-from draw_text import DrawText
-from draw_rect import DrawRect
+from text_layout import LineLayout, TextLayout
+from utils import get_font
 
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
-FONTS = {}
 BLOCK_ELEMENTS = [
     "html", "body", "article", "section", "nav", "aside",
     "h1", "h2", "h3", "h4", "h5", "h6", "hgroup", "header",
@@ -23,7 +20,6 @@ class BlockLayout:
         self.parent = parent
         self.previous = previous
         self.children = []
-        self.display_list = []
     
     def layout_mode(self):
         if isinstance(self.node, Text):
@@ -55,36 +51,17 @@ class BlockLayout:
                 self.children.append(next)
                 previous = next
         else:
-            self.cursor_x = 0
-            self.cursor_y = 0
-            self.weight = "normal"
-            self.style = "roman"
-            self.size = 16
-
             self.line = []
+            self.new_line()
             self.recurse(self.node)
-            self.flush()
             
         for child in self.children:
             child.layout()
             
         # calculate height after recursing children
-        if mode == "block":
-            self.height = sum([child.height for child in self.children])
-        else:
-            self.height = self.cursor_y
-    
+        self.height = sum([child.height for child in self.children])
+
     def paint(self, display_list):
-        bgcolor = self.node.style.get("background-color",
-                                      "transparent")
-        if bgcolor != "transparent":
-            x2, y2 = self.x + self.width, self.y + self.height
-            rect = DrawRect(self.x, self.y, x2, y2, bgcolor)
-            display_list.append(rect)
-        
-        for x, y, word, font, color in self.display_list:
-            display_list.append(DrawText(self.x + x, self.y + y,
-                                     word, font, color))
         for child in self.children:
             child.paint(display_list)
     
@@ -123,13 +100,28 @@ class BlockLayout:
             for child in node.children:
                 self.recurse(child)
             
+    def new_line(self):
+        self.cursor_x = 0
+        last_line = self.children[-1] if self.children else None
+        new_line = LineLayout(self.node, self, last_line)
+        self.children.append(new_line)
+        
+    def font(self, node):
+        weight = node.style["font-weight"]
+        style = node.style["font-style"]
+        if style == "normal": style = "roman"
+        size = int(float(node.style["font-size"][:-2]) * .75)
+        return get_font(size, weight, style)
+            
     def word(self, node, word: str):
-        color = node.style["color"]
-        font = self.get_font_wrapper(node)
+        font = self.font(node)
         w = font.measure(word)
         if self.cursor_x + w > self.width:
-            self.flush()
-        self.line.append((self.cursor_x, word, font, color))
+            self.new_line()
+        line = self.children[-1]
+        previous_word = line.children[-1] if line.children else None
+        text = TextLayout(node, word, line, previous_word)
+        line.children.append(text)
         self.cursor_x += w + font.measure(" ")
         
     def flush(self):
@@ -151,17 +143,3 @@ class BlockLayout:
         
         max_descent = max([metric["descent"] for metric in metrics])
         self.cursor_y = baseline + 1.25 * max_descent
-        
-    def get_font(self, size, weight, slant) -> Font:
-        key = (size, weight, slant)
-        if key not in FONTS:
-            font = Font(size=size, weight=weight, slant=slant)
-            FONTS[key] = font
-        return FONTS[key]
-    
-    def get_font_wrapper(self, node):
-        weight = node.style["font-weight"]
-        style = node.style["font-style"]
-        if style == "normal": style = "roman"
-        size = int(float(node.style["font-size"][:-2]) * .75)
-        return self.get_font(size, weight, style)
