@@ -1,3 +1,4 @@
+from input_layout import InputLayout
 from text import Text
 from element import Element
 from text_layout import LineLayout, TextLayout
@@ -13,6 +14,7 @@ BLOCK_ELEMENTS = [
     "figcaption", "main", "div", "table", "form", "fieldset",
     "legend", "details", "summary"
 ]
+INPUT_WIDTH_PX = 200
 
 class BlockLayout:
     def __init__(self, node, parent, previous):
@@ -96,15 +98,29 @@ class BlockLayout:
                 self.word(node, word)
         else:
             if node.tag == "br":
-                self.flush()
-            for child in node.children:
-                self.recurse(child)
+                self.new_line()
+            elif node.tag == "input" or node.tag == "button":
+                self.input(node)
+            else:
+                for child in node.children:
+                    self.recurse(child)
             
     def new_line(self):
         self.cursor_x = 0
         last_line = self.children[-1] if self.children else None
         new_line = LineLayout(self.node, self, last_line)
         self.children.append(new_line)
+        
+    def input(self, node):
+        w = INPUT_WIDTH_PX
+        if self.cursor_x + w > self.width:
+            self.new_line()
+        line = self.children[-1]
+        previous_word = line.children[-1] if line.children else None
+        input = InputLayout(node, line, previous_word)
+        line.children.append(input)
+        font = self.font(node)
+        self.cursor_x += w + font.measure(" ")
         
     def font(self, node):
         weight = node.style["font-weight"]

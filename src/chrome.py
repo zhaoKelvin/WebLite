@@ -1,7 +1,7 @@
 from draw_rect import DrawRect
 from draw_text import DrawText
 from url import URL
-from utils import get_font
+from text_layout import get_font
 
 WIDTH, HEIGHT = 800, 600
 

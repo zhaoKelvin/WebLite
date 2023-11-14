@@ -33,7 +33,7 @@ class URL:
             self.port = int(port)
 
         
-    def request(self):
+    def request(self, payload):
         # Connect to the host
         s = socket.socket(
             family=socket.AF_INET,
@@ -47,9 +47,18 @@ class URL:
             ctx = ssl.create_default_context()
             s = ctx.wrap_socket(s, server_hostname=self.host)
         
-        s.send((f"GET {self.path} HTTP/1.0\r\n" + \
-                f"Host: {self.host}\r\n\r\n") \
-               .encode("utf8"))
+        # Decide between GET and POST request
+        method = "POST" if payload else "GET"
+        
+        body = f"{method} {self.path} HTTP/1.0\r\n"
+        if payload:
+            length = len(payload.encode("utf8"))
+            body += f"Content-Length: {length}\r\n"
+            body += "\r\n" + (payload if payload else "")
+        else:
+            body += f"Host: {self.host}\r\n\r\n"
+        
+        s.send(body.encode("utf8"))
         
         # Read and interpret response from host
         response = s.makefile("r", encoding="utf8", newline="\r\n")

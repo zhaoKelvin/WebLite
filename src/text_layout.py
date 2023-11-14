@@ -68,3 +68,4 @@ class TextLayout:
     def paint(self, display_list):
         color = self.node.style["color"]
         display_list.append(DrawText(self.x, self.y, self.word, self.font, color))
+        

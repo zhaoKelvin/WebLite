@@ -1,3 +1,6 @@
+from tkinter.font import Font
+
+
 class DrawText:
     def __init__(self, x1, y1, text, font, color):
         self.top = y1
