@@ -60,7 +60,6 @@ class Tab:
                     if elt.tag == "form" and "action" in elt.attributes:
                         return self.submit_form(elt)
         elt = elt.parent
-            elt = elt.parent
             
     def keypress(self, char):
         if self.focus:
