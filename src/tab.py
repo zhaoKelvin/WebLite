@@ -59,7 +59,8 @@ class Tab:
                 while elt:
                     if elt.tag == "form" and "action" in elt.attributes:
                         return self.submit_form(elt)
-        elt = elt.parent
+                    elt = elt.parent
+            elt = elt.parent
             
     def keypress(self, char):
         if self.focus:
@@ -75,8 +76,8 @@ class Tab:
         for input in inputs:
             name = input.attributes["name"]
             value = input.attributes.get("value", "")
-            name = urllib3.parse.quote(name)
-            value = urllib3.parse.quote(value)
+            # name = urllib3.parse.quote(name)
+            # value = urllib3.parse.quote(value)
             body += "&" + name + "=" + value
         body = body[1:]
         url = self.url.resolve(elt.attributes["action"])
