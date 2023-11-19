@@ -1,11 +1,13 @@
-import urllib3
+import urllib.parse
 from cssparser import CSSParser, cascade_priority, style
 from document_layout import DocumentLayout
 from element import Element
 from htmlparser import HTMLParser
+from jscontext import JSContext
 from text import Text
 from url import URL
 from utils import tree_to_list
+import dukpy
 
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
@@ -45,9 +47,11 @@ class Tab:
             if isinstance(elt, Text):
                 pass
             elif elt.tag == "a" and "href" in elt.attributes:
+                if self.js.dispatch_event("click", elt): return
                 url = self.url.resolve(elt.attributes["href"])
                 return self.load(url)
             elif elt.tag == "input":
+                if self.js.dispatch_event("click", elt): return
                 if self.focus:
                     self.focus.is_focused = False
                 self.focus = elt
@@ -55,6 +59,7 @@ class Tab:
                 elt.attributes["value"] = ""
                 return self.render()
             elif elt.tag == "button":
+                if self.js.dispatch_event("click", elt): return
                 # walk up HTML tree to find the form the button is in
                 while elt:
                     if elt.tag == "form" and "action" in elt.attributes:
@@ -64,10 +69,13 @@ class Tab:
             
     def keypress(self, char):
         if self.focus:
+            if self.js.dispatch_event("keydown", self.focus): return
             self.focus.attributes["value"] += char
             self.render()
             
     def submit_form(self, elt):
+        if self.js.dispatch_event("submit", elt): return
+        
         inputs = [node for node in tree_to_list(elt, [])
                   if isinstance(node, Element)
                   and node.tag == "input"
@@ -76,8 +84,8 @@ class Tab:
         for input in inputs:
             name = input.attributes["name"]
             value = input.attributes.get("value", "")
-            # name = urllib3.parse.quote(name)
-            # value = urllib3.parse.quote(value)
+            name = urllib.parse.quote(name)
+            value = urllib.parse.quote(value)
             body += "&" + name + "=" + value
         body = body[1:]
         url = self.url.resolve(elt.attributes["action"])
@@ -114,6 +122,21 @@ class Tab:
                 continue
             self.rules.extend(CSSParser(body).parse())
             
+        # Parse Javascript
+        scripts = [node.attributes["src"] 
+                   for node in tree_to_list(self.nodes, [])
+                   if isinstance(node, Element)
+                   and node.tag == "script"
+                   and "src" in node.attributes]
+        
+        self.js = JSContext(self)
+        for script in scripts:
+            header, body = url.resolve(script).request()
+            try:
+                self.js.run(body)
+            except dukpy.JSRuntimeError as e:
+                print(f"Script {script} crashed {e}")
+        
         self.render()
         
     def render(self):

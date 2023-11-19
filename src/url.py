@@ -33,7 +33,7 @@ class URL:
             self.port = int(port)
 
         
-    def request(self, payload):
+    def request(self, payload=None):
         # Connect to the host
         s = socket.socket(
             family=socket.AF_INET,
