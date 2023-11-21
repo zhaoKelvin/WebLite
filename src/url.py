@@ -3,6 +3,9 @@ import ssl
 from text import Text
 from element import Element
 
+
+COOKIE_JAR = {}
+
 class URL:
     
     def __init__(self, url: str):
@@ -51,6 +54,12 @@ class URL:
         method = "POST" if payload else "GET"
         
         body = f"{method} {self.path} HTTP/1.0\r\n"
+        
+        # Send cookie to site
+        if self.host in COOKIE_JAR:
+            cookie = COOKIE_JAR[self.host]
+            body += "Cookie: {}\r\n".format(cookie)
+        
         if payload:
             length = len(payload.encode("utf8"))
             body += f"Content-Length: {length}\r\n"
@@ -73,6 +82,11 @@ class URL:
             if line == "\r\n": break
             header, value = line.split(":", 1)
             headers[header.lower()] = value.strip()
+            
+        # Update cookies if told to
+        if "set-cookie" in headers:
+            cookie = headers["set-cookie"]
+            COOKIE_JAR[self.host] = cookie
         
         # Check if unique headers are not present
         assert "transfer-encoding" not in headers
