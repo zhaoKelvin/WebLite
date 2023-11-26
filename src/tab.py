@@ -106,6 +106,15 @@ class Tab:
         headers, body = url.request(self.url, payload)
         self.nodes = HTMLParser(body).parse()
         
+        # Extract and Parse Content-Security-Policy header
+        self.allowed_origins = None
+        if "content-security-policy" in headers:
+            csp = headers["content-security-policy"].split()
+            if len(csp) > 0 and csp[0] == "default-src":
+                self.allowed_origins = []
+                for origin in csp[1:]:
+                    self.allowed_origins.append(URL(origin).origin())
+        
         # Parse CSS
         self.rules = DEFAULT_STYLE_SHEET.copy()
         links = [node.attributes["href"]
@@ -117,6 +126,10 @@ class Tab:
 
         for link in links:
             style_url = url.resolve(link)
+            if not self.allowed_request(style_url):
+                print(style_url)
+                print(f"Blocked script {link} due to CSP")
+                continue
             try:
                 header, body = style_url.request(url)
             except:
@@ -133,6 +146,9 @@ class Tab:
         self.js = JSContext(self)
         for script in scripts:
             script_url = url.resolve(script)
+            if not self.allowed_request(script_url):
+                print(f"Blocked script {script} due to CSP")
+                continue
             header, body = script_url.request(url)
             try:
                 self.js.run(body)
@@ -156,3 +172,6 @@ class Tab:
                 continue
             if cmd.bottom < self.scroll: continue
             cmd.execute(self.scroll - offset, canvas)
+            
+    def allowed_request(self, url: URL):
+        return self.allowed_origins == None or url.origin() in self.allowed_origins

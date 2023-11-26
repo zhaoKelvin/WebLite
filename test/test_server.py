@@ -1,6 +1,7 @@
 import socket
 import urllib.parse
 import random
+import html
 
 
 s = socket.socket(
@@ -52,12 +53,12 @@ def handle_connection(conx):
     session = SESSIONS.setdefault(token, {})
     status, body = do_request(session, method, url, headers, body)
     
-    response = "HTTP/1.0 {}\r\n".format(status)
+    response = f"HTTP/1.0 {status}\r\n"
     if 'cookie' not in headers:
-        template = "Set-Cookie: token={}\r\n; SameSite=Lax\r\n"
-        response += template.format(token)
-    response += "Content-Length: {}\r\n".format(
-        len(body.encode("utf8")))
+        response += f"Set-Cookie: token={token}; SameSite=Lax\r\n"
+    csp = "default-src http://localhost:8000 http://127.0.0.1:8000"
+    response += f"Content-Security-Policy: {csp}\r\n"
+    response += f"Content-Length: {len(body.encode('utf8'))}\r\n"
     response += "\r\n" + body
 
     conx.send(response.encode('utf8'))
@@ -80,9 +81,10 @@ def show_comments(session):
         out += "<a href=/login>Sign in to write in the guest book</a>"
         
     out += "<strong></strong>"
+    out += "<script src=https://example.com/evil.js></script>"
     for entry, who in ENTRIES:
-        out += "<p>" + entry + "\n"
-        out += "<i>by " + who + "</i></p>"
+        out += "<p>" + html.escape(entry) + "\n"
+        out += "<i>by " + html.escape(who) + "</i></p>"
          
     return out
 
