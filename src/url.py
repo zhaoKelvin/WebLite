@@ -107,6 +107,9 @@ class URL:
             url = dir + "/" + url
         return URL(self.scheme + "://" + self.host + \
                    ":" + str(self.port) + url)
+        
+    def origin(self):
+        return self.scheme + "://" + self.host + ":" + str(self.port)
 
     def __str__(self):
         port_part = ":" + str(self.port)
