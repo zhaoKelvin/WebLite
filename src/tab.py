@@ -103,7 +103,7 @@ class Tab:
         self.history.append(url)
         
         # Parse HTML
-        headers, body = url.request(payload)
+        headers, body = url.request(self.url, payload)
         self.nodes = HTMLParser(body).parse()
         
         # Parse CSS
@@ -116,8 +116,9 @@ class Tab:
                 and node.attributes.get("rel") == "stylesheet"]
 
         for link in links:
+            style_url = url.resolve(link)
             try:
-                header, body = url.resolve(link).request()
+                header, body = style_url.request(url)
             except:
                 continue
             self.rules.extend(CSSParser(body).parse())
@@ -131,7 +132,8 @@ class Tab:
         
         self.js = JSContext(self)
         for script in scripts:
-            header, body = url.resolve(script).request()
+            script_url = url.resolve(script)
+            header, body = script_url.request(url)
             try:
                 self.js.run(body)
             except dukpy.JSRuntimeError as e:

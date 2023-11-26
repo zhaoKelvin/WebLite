@@ -63,5 +63,5 @@ class JSContext:
         full_url = self.tab.url.resolve(url)
         if full_url.origin() != self.tab.url.origin():
             raise Exception("Cross-origin XHR request not allowed")
-        headers, out = full_url.request(body)
+        headers, out = full_url.request(self.tab.url, body)
         return out

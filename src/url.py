@@ -36,7 +36,7 @@ class URL:
             self.port = int(port)
 
         
-    def request(self, payload=None):
+    def request(self, top_level_url, payload=None):
         # Connect to the host
         s = socket.socket(
             family=socket.AF_INET,
@@ -57,8 +57,13 @@ class URL:
         
         # Send cookie to site
         if self.host in COOKIE_JAR:
-            cookie = COOKIE_JAR[self.host]
-            body += "Cookie: {}\r\n".format(cookie)
+            cookie, params = COOKIE_JAR[self.host]
+            allow_cookie = True
+            if top_level_url and params.get("samesite", "none") == "lax":
+                if method != "GET":
+                    allow_cookie = self.host == top_level_url.host
+            if allow_cookie:
+                body += f"Cookie: {cookie}\r\n"
         
         if payload:
             length = len(payload.encode("utf8"))
@@ -76,25 +81,34 @@ class URL:
         assert status == "200", f"{status}: {explanation}"
         
         # Map headers
-        headers = {}
+        response_headers = {}
         while True:
             line = response.readline()
             if line == "\r\n": break
             header, value = line.split(":", 1)
-            headers[header.lower()] = value.strip()
+            response_headers[header.lower()] = value.strip()
             
         # Update cookies if told to
-        if "set-cookie" in headers:
-            cookie = headers["set-cookie"]
-            COOKIE_JAR[self.host] = cookie
+        if "set-cookie" in response_headers:
+            cookie = response_headers["set-cookie"]
+            params = {}
+            if ";" in cookie:
+                cookie, rest = cookie.split(";", 1)
+                for param in rest.split(";"):
+                    if '=' in param:
+                        param, value = param.strip().split("=", 1)
+                    else:
+                        value = "true"
+                    params[param.casefold()] = value.casefold()
+            COOKIE_JAR[self.host] = (cookie, params)
         
         # Check if unique headers are not present
-        assert "transfer-encoding" not in headers
-        assert "content-encoding" not in headers
+        assert "transfer-encoding" not in response_headers
+        assert "content-encoding" not in response_headers
         
         body = response.read()
         s.close()
-        return headers, body
+        return response_headers, body
     
     def resolve(self, url):
         if "://" in url: return URL(url)
