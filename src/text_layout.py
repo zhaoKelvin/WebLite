@@ -30,7 +30,7 @@ class LineLayout:
         max_ascent = max([-word.font.getMetrics().fAscent for word in self.children])
         baseline = self.y + 1.25 * max_ascent
         for word in self.children:
-            word.y = baseline - word.font.getMetrics().fAscent
+            word.y = baseline + word.font.getMetrics().fAscent
         max_descent = max([word.font.getMetrics().fDescent for word in self.children])
         
         self.height = 1.25 * (max_ascent + max_descent)

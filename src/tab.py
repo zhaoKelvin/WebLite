@@ -37,6 +37,8 @@ class Tab:
             self.scroll = min(self.scroll + SCROLL_STEP, max_y)
         
     def click(self, x, y):
+        print("clicked in the tab")
+        self.focus = None
         y += self.scroll
         objs = [obj for obj in tree_to_list(self.document, [])
                 if obj.x <= x < obj.x + obj.width
@@ -49,6 +51,7 @@ class Tab:
             elif elt.tag == "a" and "href" in elt.attributes:
                 if self.js.dispatch_event("click", elt): return
                 url = self.url.resolve(elt.attributes["href"])
+                print("pressed link")
                 return self.load(url)
             elif elt.tag == "input":
                 if self.js.dispatch_event("click", elt): return
