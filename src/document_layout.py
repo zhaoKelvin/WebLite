@@ -20,5 +20,5 @@ class DocumentLayout:
         child.layout()
         self.height = child.height + 2 * VSTEP
         
-    def paint(self, display_list):
-        self.children[0].paint(display_list)
+    def paint(self):
+        return []

@@ -1,5 +1,5 @@
-from utils import get_font
-from draw_text import DrawText
+from utils import get_font, linespace
+from draw import DrawText
 
 
 class LineLayout:
@@ -27,17 +27,19 @@ class LineLayout:
             self.height = 0
             return
             
-        max_ascent = max([word.font.metrics("ascent") for word in self.children])
+        max_ascent = max([-word.font.getMetrics().fAscent for word in self.children])
         baseline = self.y + 1.25 * max_ascent
         for word in self.children:
-            word.y = baseline - word.font.metrics("ascent")
-        max_descent = max([word.font.metrics("descent") for word in self.children])
+            word.y = baseline - word.font.getMetrics().fAscent
+        max_descent = max([word.font.getMetrics().fDescent for word in self.children])
         
         self.height = 1.25 * (max_ascent + max_descent)
         
-    def paint(self, display_list):
-        for child in self.children:
-            child.paint(display_list)
+    def paint(self):
+        return []
+    
+    def paint_effects(self, cmds):
+        return cmds
 
 
 class TextLayout:
@@ -52,20 +54,26 @@ class TextLayout:
         weight = self.node.style["font-weight"]
         style = self.node.style["font-style"]
         if style == "normal": style = "roman"
-        size = int(float(self.node.style["font-size"][:-2]) * .75)
+        # size = int(float(self.node.style["font-size"][:-2]) * .75)
+        size = float(self.node.style["font-size"][:-2])
         self.font = get_font(size, weight, style)
         
-        self.width = self.font.measure(self.word)
+        self.width = self.font.measureText(self.word)
 
         if self.previous:
-            space = self.previous.font.measure(" ")
+            space = self.previous.font.measureText(" ")
             self.x = self.previous.x + space + self.previous.width
         else:
             self.x = self.parent.x
 
-        self.height = self.font.metrics("linespace")
+        self.height = linespace(self.font)
         
-    def paint(self, display_list):
+    def paint(self):
+        cmds = []
         color = self.node.style["color"]
-        display_list.append(DrawText(self.x, self.y, self.word, self.font, color))
+        cmds.append(DrawText(self.x, self.y, self.word, self.font, color))
+        return cmds
+    
+    def paint_effects(self, cmds):
+        return cmds
         

@@ -6,7 +6,7 @@ from htmlparser import HTMLParser
 from jscontext import JSContext
 from text import Text
 from url import URL
-from utils import tree_to_list
+from utils import paint_tree, tree_to_list
 import dukpy
 
 HSTEP, VSTEP = 13, 18
@@ -164,14 +164,18 @@ class Tab:
         self.document = DocumentLayout(self.nodes)
         self.document.layout()
         self.display_list = []
-        self.document.paint(self.display_list)
+        paint_tree(self.document, self.display_list)
             
-    def draw(self, canvas, offset):
+    # def draw(self, canvas, offset):
+    #     for cmd in self.display_list:
+    #         if cmd.rect.top() > self.scroll + self.tab_height:
+    #             continue
+    #         if cmd.rect.bottom() < self.scroll: continue
+    #         cmd.execute(self.scroll - offset, canvas)
+            
+    def raster(self, canvas):
         for cmd in self.display_list:
-            if cmd.top > self.scroll + self.tab_height:
-                continue
-            if cmd.bottom < self.scroll: continue
-            cmd.execute(self.scroll - offset, canvas)
+            cmd.execute(canvas)
             
     def allowed_request(self, url: URL):
         return self.allowed_origins == None or url.origin() in self.allowed_origins

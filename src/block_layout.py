@@ -3,6 +3,8 @@ from text import Text
 from element import Element
 from text_layout import LineLayout, TextLayout
 from utils import get_font
+from draw import DrawRRect
+import skia
 
 HSTEP, VSTEP = 13, 18
 WIDTH, HEIGHT = 800, 600
@@ -63,9 +65,28 @@ class BlockLayout:
         # calculate height after recursing children
         self.height = sum([child.height for child in self.children])
 
-    def paint(self, display_list):
-        for child in self.children:
-            child.paint(display_list)
+    def self_rect(self):
+        return skia.Rect.MakeLTRB(
+            self.x, 
+            self.y, 
+            self.x + self.width,
+            self.y + self.height
+            )
+
+    def paint(self):
+        cmds = []
+
+        bgcolor = self.node.style.get("background-color", "transparent")
+        
+        if bgcolor != "transparent":
+            radius = float(
+                self.node.style.get("border-radius", "0px")[:-2])
+            cmds.append(DrawRRect(self.self_rect(), radius, bgcolor))
+
+        return cmds
+        
+    def should_paint(self):
+        return isinstance(self.node, Text) or (self.node.tag != "input" and self.node.tag !=  "button")
     
     def open_tag(self, tag):
         if tag == "i":
@@ -119,8 +140,11 @@ class BlockLayout:
         previous_word = line.children[-1] if line.children else None
         input = InputLayout(node, line, previous_word)
         line.children.append(input)
-        font = self.font(node)
-        self.cursor_x += w + font.measure(" ")
+        weight = node.style["font-weight"]
+        style = node.style["font-style"]
+        size = float(node.style["font-size"][:-2])
+        font = get_font(size, weight, style)
+        self.cursor_x += w + font.measureText(" ")
         
     def font(self, node):
         weight = node.style["font-weight"]
@@ -130,15 +154,18 @@ class BlockLayout:
         return get_font(size, weight, style)
             
     def word(self, node, word: str):
-        font = self.font(node)
-        w = font.measure(word)
+        weight = node.style["font-weight"]
+        style = node.style["font-style"]
+        size = float(node.style["font-size"][:-2])
+        font = get_font(size, weight, style)
+        w = font.measureText(word)
         if self.cursor_x + w > self.width:
             self.new_line()
         line = self.children[-1]
         previous_word = line.children[-1] if line.children else None
         text = TextLayout(node, word, line, previous_word)
         line.children.append(text)
-        self.cursor_x += w + font.measure(" ")
+        self.cursor_x += w + font.measureText(" ")
         
     def flush(self):
         """
@@ -146,12 +173,12 @@ class BlockLayout:
         updates the cursor_x and cursor_y fields.
         """
         if not self.line: return
-        metrics = [font.metrics() for x, word, font, color in self.line]
+        metrics = [font.getMetrics() for x, word, font, color in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
             
         for x, word, font, color in self.line:
-            y = baseline - font.metrics("ascent")
+            y = baseline - font.getMetrics("ascent")
             self.display_list.append((x, y, word, font, color))
             
         self.cursor_x = 0
