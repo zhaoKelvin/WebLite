@@ -203,8 +203,8 @@ class Browser:
         sdl2.SDL_UpdateWindowSurface(self.sdl_window)
         
     def new_tab(self, url):
-        new_tab = Tab(HEIGHT - self.chrome.bottom)
-        new_tab.load(url, self.chrome)
+        new_tab = Tab(HEIGHT - self.chrome.bottom, self.chrome)
+        new_tab.load(url)
         self.tabs.append(new_tab)
         self.active_tab = new_tab
         self.raster_chrome()

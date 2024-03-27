@@ -2,11 +2,14 @@ import dukpy
 from cssparser import CSSParser
 from element import Element
 from htmlparser import HTMLParser
+from tasks import Task
 from utils import tree_to_list
+import threading
 
 
 RUNTIME_JS = open("runtime.js").read()
 EVENT_DISPATCH_JS = "new Node(dukpy.handle).dispatchEvent(new Event(dukpy.type))"
+SETTIMEOUT_CODE = "__runSetTimeout(dukpy.handle)"
 
 
 class JSContext:
@@ -14,6 +17,7 @@ class JSContext:
         self.tab = tab
         self.node_to_handle = {}
         self.handle_to_node = {}
+        self.discarded = False
         
         self.interp = dukpy.JSInterpreter()
         self.interp.export_function("log", print)
@@ -21,10 +25,14 @@ class JSContext:
         self.interp.export_function("getAttribute", self.getAttribute)
         self.interp.export_function("innerHTML_set", self.innerHTML_set)
         self.interp.export_function("XMLHttpRequest_send", self.XMLHttpRequest_send)
+        self.interp.export_function("setTimeout", self.setTimeout)
         self.interp.evaljs(RUNTIME_JS)
 
-    def run(self, code):
-        return self.interp.evaljs(code)
+    def run(self, script, code):
+        try:
+            self.interp.evaljs(code)
+        except dukpy.JSRuntimeError as e:
+            print("Script", script, "crashed", e)
 
     def querySelectorAll(self, selector_text):
         selector = CSSParser(selector_text).selector()
@@ -67,3 +75,13 @@ class JSContext:
             raise Exception("Cross-origin XHR request not allowed")
         headers, out = full_url.request(self.tab.url, body)
         return out
+    
+    def dispatch_settimeout(self, handle):
+        if self.discarded: return
+        self.interp.evaljs(SETTIMEOUT_CODE, handle=handle)
+        
+    def setTimeout(self, handle, time):
+        def run_callback():
+            task = Task(self.dispatch_settimeout, handle)
+            self.tab.task_runner.schedule_task(task)
+        threading.Timer(time / 100.0, run_callback).start()

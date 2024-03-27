@@ -17,10 +17,12 @@ with open("browser.css") as f:
     DEFAULT_STYLE_SHEET = CSSParser(f.read()).parse()
 
 class Tab:
-    def __init__(self, tab_height):
+    def __init__(self, tab_height, chrome):
         self.tab_height = tab_height
+        self.chrome = chrome
         self.history = []
         self.focus = None
+        self.js = None
         self.task_runner = TaskRunner(self)
     
     def scrollup(self) -> None:
@@ -107,7 +109,7 @@ class Tab:
             back = self.history.pop()
             self.load(back)    
             
-    def load(self, url: URL, chrome, payload=None) -> None:
+    def load(self, url: URL, payload=None) -> None:
         self.url = url
         self.scroll = 0
         self.history.append(url)
@@ -153,6 +155,7 @@ class Tab:
                    and node.tag == "script"
                    and "src" in node.attributes]
         
+        if self.js: self.js.discarded = True
         self.js = JSContext(self)
         for script in scripts:
             script_url = url.resolve(script)
@@ -164,9 +167,9 @@ class Tab:
             self.task_runner.schedule_task(task)
     
         if (url.host == "localhost" or url.host == "127.0.0.1"):
-            chrome.address_bar = f"{url.scheme}://{url.host}:{url.port}{url.path}"
+            self.chrome.address_bar = f"{url.scheme}://{url.host}:{url.port}{url.path}"
         else:
-            chrome.address_bar = f"{url.scheme}://{url.host}{url.path}"
+            self.chrome.address_bar = f"{url.scheme}://{url.host}{url.path}"
         self.render()
         
     def render(self):

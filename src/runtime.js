@@ -44,6 +44,19 @@ Object.defineProperty(Node.prototype, 'innerHTML', {
     }
 });
 
+SET_TIMEOUT_REQUESTS = {}
+
+function setTimeout(callback, time_delta) {
+    var handle = Object.keys(SET_TIMEOUT_REQUESTS).length;
+    SET_TIMEOUT_REQUESTS[handle] = callback;
+    call_python("setTimeout", handle, time_delta)
+}
+
+function __runSetTimeout(handle) {
+    var callback = SET_TIMEOUT_REQUESTS[handle]
+    callback()
+}
+
 function XMLHttpRequest() {}
 
 XMLHttpRequest.prototype.open = function(method, url, is_async) {
