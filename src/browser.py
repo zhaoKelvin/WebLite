@@ -205,7 +205,7 @@ class Browser:
         
     def new_tab(self, url):
         new_tab = Tab(HEIGHT - self.chrome.bottom)
-        new_tab.load(url)
+        new_tab.load(url, self.chrome)
         self.tabs.append(new_tab)
         self.active_tab = new_tab
         self.raster_chrome()

@@ -106,7 +106,7 @@ class Tab:
             back = self.history.pop()
             self.load(back)    
             
-    def load(self, url: URL, payload=None) -> None:
+    def load(self, url: URL, chrome, payload=None) -> None:
         self.url = url
         self.scroll = 0
         self.history.append(url)
@@ -163,7 +163,11 @@ class Tab:
                 self.js.run(body)
             except dukpy.JSRuntimeError as e:
                 print(f"Script {script} crashed {e}")
-        
+    
+        if (url.host == "localhost" or url.host == "127.0.0.1"):
+            chrome.address_bar = f"{url.scheme}://{url.host}:{url.port}{url.path}"
+        else:
+            chrome.address_bar = f"{url.scheme}://{url.host}{url.path}"
         self.render()
         
     def render(self):

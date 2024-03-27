@@ -133,7 +133,7 @@ class Chrome:
             self.browser.active_tab.go_back()
         elif intersects(x, y, self.address_rect):
             self.focus = "address bar"
-            self.address_bar = ""
+            # self.address_bar = ""
         else:
             for i, tab in enumerate(self.browser.tabs):
                 if intersects(x, y, self.tab_rect(i)):
