@@ -15,9 +15,8 @@ import ctypes
 import sdl2
 import skia
 
-HSTEP, VSTEP = 13, 18
-WIDTH, HEIGHT = 800, 600
-SCROLL_STEP = 100
+from constants import *
+
 
 with open("browser.css") as f:
     DEFAULT_STYLE_SHEET = CSSParser(f.read()).parse()
@@ -238,6 +237,7 @@ def mainloop(browser: Browser):
                     browser.handle_backspace()
             elif event.type == sdl2.SDL_TEXTINPUT:
                 browser.handle_key(event.text.text.decode('utf8'))
+        browser.active_tab.task_runner.run()
 
 
 if __name__ == "__main__":

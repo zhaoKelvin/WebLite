@@ -4,7 +4,7 @@ from text_layout import get_font
 import skia
 from utils import linespace
 
-WIDTH, HEIGHT = 800, 600
+from constants import WIDTH
 
 class Chrome:
     def __init__(self, browser):

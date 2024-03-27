@@ -7,11 +7,11 @@ from jscontext import JSContext
 from text import Text
 from url import URL
 from utils import paint_tree, tree_to_list
+from tasks import Task, TaskRunner
 import dukpy
 
-HSTEP, VSTEP = 13, 18
-WIDTH, HEIGHT = 800, 600
-SCROLL_STEP = 100
+from constants import *
+
 
 with open("browser.css") as f:
     DEFAULT_STYLE_SHEET = CSSParser(f.read()).parse()
@@ -21,6 +21,7 @@ class Tab:
         self.tab_height = tab_height
         self.history = []
         self.focus = None
+        self.task_runner = TaskRunner(self)
     
     def scrollup(self) -> None:
         self.scroll = max(self.scroll - SCROLL_STEP, 0)
@@ -159,10 +160,8 @@ class Tab:
                 print(f"Blocked script {script} due to CSP")
                 continue
             header, body = script_url.request(url)
-            try:
-                self.js.run(body)
-            except dukpy.JSRuntimeError as e:
-                print(f"Script {script} crashed {e}")
+            task = Task(self.js.run, script_url, body)
+            self.task_runner.schedule_task(task)
     
         if (url.host == "localhost" or url.host == "127.0.0.1"):
             chrome.address_bar = f"{url.scheme}://{url.host}:{url.port}{url.path}"

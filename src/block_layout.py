@@ -6,8 +6,8 @@ from utils import get_font
 from draw import DrawRRect
 import skia
 
-HSTEP, VSTEP = 13, 18
-WIDTH, HEIGHT = 800, 600
+from constants import VSTEP
+
 BLOCK_ELEMENTS = [
     "html", "body", "article", "section", "nav", "aside",
     "h1", "h2", "h3", "h4", "h5", "h6", "hgroup", "header",

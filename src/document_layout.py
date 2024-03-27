@@ -1,8 +1,6 @@
 from block_layout import BlockLayout
 
-
-HSTEP, VSTEP = 13, 18
-WIDTH, HEIGHT = 800, 600
+from constants import HSTEP, VSTEP, WIDTH
 
 class DocumentLayout:
     def __init__(self, node):
