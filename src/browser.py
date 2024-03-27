@@ -127,6 +127,12 @@ class Browser:
             self.raster_tab()
             self.raster_chrome()
             self.draw()
+            
+    def handle_backspace(self):
+        if self.chrome.focus:
+            self.chrome.backspace()
+            self.raster_chrome()
+            self.draw()
         
     def handle_quit(self):
         sdl2.SDL_DestroyWindow(self.sdl_window)
@@ -224,6 +230,9 @@ def mainloop(browser: Browser):
                     browser.handle_down(event)
                 elif event.key.keysym.sym == sdl2.SDLK_UP:
                     browser.handle_up(event)
+                elif event.key.keysym.sym == sdl2.SDLK_BACKSPACE:
+                    print("backspace pressed")
+                    browser.handle_backspace()
             elif event.type == sdl2.SDL_TEXTINPUT:
                 browser.handle_key(event.text.text.decode('utf8'))
 
