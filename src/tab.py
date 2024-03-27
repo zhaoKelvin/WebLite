@@ -37,7 +37,6 @@ class Tab:
             self.scroll = min(self.scroll + SCROLL_STEP, max_y)
         
     def click(self, x, y):
-        print("clicked in the tab")
         self.focus = None
         y += self.scroll
         objs = [obj for obj in tree_to_list(self.document, [])
@@ -51,7 +50,6 @@ class Tab:
             elif elt.tag == "a" and "href" in elt.attributes:
                 if self.js.dispatch_event("click", elt): return
                 url = self.url.resolve(elt.attributes["href"])
-                print("pressed link")
                 return self.load(url)
             elif elt.tag == "input":
                 if self.js.dispatch_event("click", elt): return
@@ -74,6 +72,14 @@ class Tab:
         if self.focus:
             if self.js.dispatch_event("keydown", self.focus): return
             self.focus.attributes["value"] += char
+            self.render()
+            
+    def backspace(self):
+        if self.focus:
+            if self.js.dispatch_event("keydown", self.focus): return
+            curr_text = self.focus.attributes["value"]
+            if len(curr_text) > 0:
+                self.focus.attributes["value"] = curr_text[:-1]
             self.render()
             
     def submit_form(self, elt):
